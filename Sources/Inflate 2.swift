@@ -24,14 +24,14 @@
 //        These interfaces will change in the future.
 
 
-public func inflate(_ reader: (Void) throws -> UInt8, _ writer: (UInt8) throws -> Void) throws
+public func inflate(reader: (Void) throws -> UInt8, _ writer: (UInt8) throws -> Void) throws
 {
     let _ = try Inflate(reader, writer)
 }
 
 
 @warn_unused_result
-public func inflate(_ reader: (Void) throws -> UInt8) throws -> Int
+public func inflate(reader: (Void) throws -> UInt8) throws -> Int
 {
     var size = 0
     let _ = try Inflate(reader) { _ in size += 1 }
@@ -39,7 +39,7 @@ public func inflate(_ reader: (Void) throws -> UInt8) throws -> Int
 }
 
 
-public enum InflateError: ErrorProtocol {
+public enum InflateError: ErrorType {
     case BlockLengthMismatch
     case InvalidBits
     case InvalidBlockType
@@ -76,7 +76,7 @@ private let CodeOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5,
 
 
 // http://graphics.stanford.edu/~seander/bithacks.html
-private func bitReverse16(_ value:Int) -> Int {
+private func bitReverse16(value:Int) -> Int {
     var v = UInt16(truncatingBitPattern: value)
     v = ((v & 0xAAAA) >> 1) | ((v & 0x5555) << 1)
     v = ((v & 0xCCCC) >> 2) | ((v & 0x3333) << 2)
@@ -94,7 +94,7 @@ private final class Inflate
     var bitsBuffer = 0
     var bitsCount = 0
 
-    var window = [UInt8](repeating: 0, count: WINSIZE)
+    var window = [UInt8](count: WINSIZE, repeatedValue: 0)
     var windowPos = 0
 
     var fixedInitialized = false
@@ -130,13 +130,13 @@ private final class Inflate
     }
 
 
-    func write(_ v:Int) throws
+    func write(v:Int) throws
     {
         try write(UInt8(v))
     }
 
 
-    func write(_ v:UInt8) throws
+    func write(v:UInt8) throws
     {
         try writeUInt8(v)
         window[windowPos] = v
@@ -144,7 +144,7 @@ private final class Inflate
     }
 
 
-    func bits(_ need:Int) throws -> Int
+    func bits(need:Int) throws -> Int
     {
         var val = bitsBuffer
         while bitsCount < need {
@@ -157,7 +157,7 @@ private final class Inflate
     }
 
 
-    func symbol(_ huffman:Huffman) throws -> Int
+    func symbol(huffman:Huffman) throws -> Int
     {
         while bitsCount < 16 {
             bitsBuffer |= try Int(readUInt8()) << bitsCount
@@ -190,7 +190,7 @@ private final class Inflate
     }
 
 
-    func decode(_ lencode:inout Huffman, _ distcode: inout Huffman) throws
+    func decode(inout lencode:Huffman, inout _ distcode:Huffman) throws
     {
         while true {
             var sym = try symbol(lencode)
@@ -238,7 +238,7 @@ private final class Inflate
     {
         if !fixedInitialized {
             fixedInitialized = true
-            var lengths = [Int](repeating: 8, count: FIXLCODES)
+            var lengths = [Int](count: FIXLCODES, repeatedValue: 8)
             for sym in 144 ..< 256 {
                 lengths[sym] = 9
             }
@@ -246,7 +246,7 @@ private final class Inflate
                 lengths[sym] = 7
             }
             try fixedLen.construct(lengths)
-            lengths = [Int](repeating: 5, count: MAXDCODES)
+            lengths = [Int](count: MAXDCODES, repeatedValue: 5)
             try fixedDist.construct(lengths)
             lengths.removeAll()
         }
@@ -264,13 +264,13 @@ private final class Inflate
             throw InflateError.TooManyCodes
         }
 
-        var codes = [Int](repeating: 0, count: 19)
+        var codes = [Int](count: 19, repeatedValue: 0)
         for index in 0 ..< codeCount {
             codes[CodeOrder[index]] = try bits(3)
         }
         try dynamicLen.construct(codes)
 
-        var lengths = [Int](repeating: 0, count: lengthCount + distanceCount)
+        var lengths = [Int](count: lengthCount + distanceCount, repeatedValue: 0)
         var index = 0
         while index < lengthCount + distanceCount {
             let sym = try symbol(dynamicLen)
@@ -309,7 +309,7 @@ private final class Inflate
         }
 
         let distances = lengths[lengthCount ..< lengths.endIndex].map(){$0}
-        lengths.removeSubrange(lengthCount ..< lengths.endIndex)
+        lengths.removeRange(lengthCount ..< lengths.endIndex)
         try dynamicLen.construct(lengths)
         try dynamicDist.construct(distances)
 
@@ -323,18 +323,18 @@ private final class Inflate
 // http://www.gzip.org/algorithm.txt
 private final class Huffman
 {
-    var fast = [UInt16](repeating: 0, count: 1 << FASTBITS)
-    var first = [Int](repeating: 0, count: MAXBITS+1)
-    var maxcode = [Int](repeating: 0, count: MAXBITS+2)
+    var fast = [UInt16](count: 1 << FASTBITS, repeatedValue: 0)
+    var first = [Int](count: MAXBITS+1, repeatedValue: 0)
+    var maxcode = [Int](count: MAXBITS+2, repeatedValue: 0)
     var value = [UInt16]()
 
-    func construct(_ length:[Int]) throws
+    func construct(length:[Int]) throws
     {
-        var next_code = [Int](repeating: 0, count: MAXBITS+1)
-        var sizes = [Int](repeating: 0, count: MAXBITS+1)
+        var next_code = [Int](count: MAXBITS+1, repeatedValue: 0)
+        var sizes = [Int](count: MAXBITS+1, repeatedValue: 0)
 
         if value.count < length.count {
-            value = [UInt16](repeating: 0, count: length.count)
+            value = [UInt16](count: length.count, repeatedValue: 0)
         }
 
         for i in 0 ..< fast.count {

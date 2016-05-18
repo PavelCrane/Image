@@ -27,7 +27,7 @@
 
 final public class SGLImageDecoderBMP : SGLImageDecoder {
 
-    override public class func test(l: SGLImageLoader) -> Bool
+    override public class func test(_ l: SGLImageLoader) -> Bool
     {
         if read16be(l) != chars("BM") {
             return false
@@ -191,7 +191,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
     }
 
 
-    func loadPalletized<T:SGLImageType>(img:T)
+    func loadPalletized<T:SGLImageType>(_ img:T)
     {
         let psize:Int
         if hsize == 12 {
@@ -206,7 +206,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
         }
 
         var pal:Array<(r:T.Element,g:T.Element,b:T.Element,a:T.Element)> = Array<(r:T.Element,g:T.Element,b:T.Element,a:T.Element)>(
-            count: psize, repeatedValue: (cast(UInt8(0)),cast(UInt8(0)),cast(UInt8(0)),castAlpha(UInt8(255)))
+             repeating: (cast(UInt8(0)),cast(UInt8(0)),cast(UInt8(0)), castAlpha(UInt8(255))), count: psize
         )
 
         for i in 0 ..< psize {
@@ -259,7 +259,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
     }
 
 
-    func loadDiscrete<T:SGLImageType>(img:T)
+    func loadDiscrete<T:SGLImageType>(_ img:T)
     {
         skip(offset - 14 - hsize)
 
@@ -323,7 +323,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
 
 
     // For bit masking, finds the highest bit and the numbers of bits.
-    func shiftCount(m:Int) -> (sh:Int,ct:UInt16)
+    func shiftCount(_ m:Int) -> (sh:Int,ct:UInt16)
     {
         // 64 ensures mask doesn't infinite loop
         if (m == 0) { return (0, 64) }
@@ -356,7 +356,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
     // version to avoid upscaling with a rounding error.
     //   11110 -> 11110111 -> 1111011111110111 -> 11110111
     //   11110       ->       1111011110111101 -> 11110111
-    func mask(v:Int, _ mask:Int, _ shiftCount:(sh:Int,ct:UInt16)) -> UInt16
+    func mask(_ v:Int, _ mask:Int, _ shiftCount:(sh:Int,ct:UInt16)) -> UInt16
     {
         let i = UInt16((shiftCount.sh < 0) ?
             (v & mask) << -shiftCount.sh :

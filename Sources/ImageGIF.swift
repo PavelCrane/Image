@@ -29,7 +29,7 @@
 
 final public class SGLImageDecoderGIF : SGLImageDecoder {
 
-    override public class func test(l: SGLImageLoader) -> Bool
+    override public class func test(_ l: SGLImageLoader) -> Bool
     {
         if read32be(l) != chars("GIF8") {
             return false
@@ -167,7 +167,7 @@ final public class SGLImageDecoderGIF : SGLImageDecoder {
         codemask = (1 << codesize) - 1
 
         codes = [(prefix:Int, first:UInt8, suffix:UInt8)](
-            count: 4096, repeatedValue:(0,0,0)
+            repeating:(0,0,0), count: 4096
         )
 
         for init_code in 0 ..< clear {
@@ -199,9 +199,9 @@ final public class SGLImageDecoderGIF : SGLImageDecoder {
     }
 
 
-    private func loadColorTable(count count:Int)
+    private func loadColorTable(count:Int)
     {
-        pal.removeAll(keepCapacity: true)
+        pal.removeAll(keepingCapacity: true)
         pal.reserveCapacity(count)
         for _ in 0 ..< count {
             let r = loader.readUInt8()
