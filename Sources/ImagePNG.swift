@@ -65,7 +65,7 @@ final public class SGLImageDecoderPNG : SGLImageDecoder {
             // premultiplied alpha (color' = color * alpha / 255)
             crushed = true
             skip(chunk_length)
-            read32be() // discard CRC
+            let _ = read32be() // discard CRC
             chunk_length = read32be()
             chunk_type = read32be()
 
@@ -84,7 +84,7 @@ final public class SGLImageDecoderPNG : SGLImageDecoder {
 
 
         while true {
-            read32be() // discard CRC
+            let _ = read32be() // discard CRC
             chunk_length = read32be()
             chunk_type = read32be()
             switch chunk_type {
@@ -120,8 +120,8 @@ final public class SGLImageDecoderPNG : SGLImageDecoder {
     {
         // discard gzip header bytes
         if (!crushed) {
-            read8() // discard cmf
-            read8() // discard flag
+            let _ = read8() // discard cmf
+            let _ = read8() // discard flag
             chunk_length -= 2
         }
         prepare()
@@ -141,7 +141,7 @@ final public class SGLImageDecoderPNG : SGLImageDecoder {
             )
             // discard IDAT checksum
             if (!crushed) {
-                read32be()
+                let _ = read32be()
             }
             // ensure all blocks are good to the end
             // well, some error here with "END?", so skip for now
@@ -444,7 +444,7 @@ final public class SGLImageDecoderPNG : SGLImageDecoder {
     {
         // Sanity check as we read data to the end
         while true {
-            read32be() // discard chunk checksum
+            let _ = read32be() // discard chunk checksum
             chunk_length = read32be()
             chunk_type = read32be()
             switch chunk_type {

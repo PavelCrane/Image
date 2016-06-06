@@ -72,8 +72,8 @@ final public class SGLImageDecoderGIF : SGLImageDecoder {
         xsize = read16le()
         ysize = read16le()
         flags = read8()
-        read8() // discard background index
-        read8() // discard pixel ratio
+        let _ = read8() // discard background index
+        let _ = read8() // discard pixel ratio
 
         if (flags & 0x80 != 0) {
             loadColorTable(count: 2 << (flags & 7))
@@ -117,7 +117,7 @@ final public class SGLImageDecoderGIF : SGLImageDecoder {
                     let len = read8()
                     if len == 4 {
                         let eflags = read8()
-                        read16le() // discard delay
+                        let _ = read16le() // discard delay
                         transparent = read8()
                         if eflags & 0x01 == 0 {
                             transparent = -1
