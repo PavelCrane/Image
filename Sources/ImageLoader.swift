@@ -37,13 +37,13 @@ import Foundation
 final public class SGLImageLoader {
 
     // Short message about failure
-    public private(set) var error:String? = nil
+    public fileprivate(set) var error:String? = nil
 
     // The selected decoder. Find details about the image
     // from here. e.g. loader.decoder!.channels
     // This becomes null after image is loaded.
-    public private(set) var decoder:SGLImageDecoder? = nil
-    public private(set) var decoderType:SGLImageDecoder.Type? = nil
+    public fileprivate(set) var decoder:SGLImageDecoder? = nil
+    public fileprivate(set) var decoderType:SGLImageDecoder.Type? = nil
 
     // Default list of decoders. API user may change this.
     // Put imprecise and sloppy detections at the end.
@@ -59,8 +59,8 @@ final public class SGLImageLoader {
         get { return fGamma }
         set { fGamma = newValue; iGamma = 1/newValue }
     }
-    private var fGamma = SGLImageLoader.gamma
-    private var iGamma = 1/SGLImageLoader.gamma
+    fileprivate var fGamma = SGLImageLoader.gamma
+    fileprivate var iGamma = 1/SGLImageLoader.gamma
 
     // Scale for Floats. Default is 0.0...1.0
     public static var scale:Float = 1.0
@@ -68,26 +68,26 @@ final public class SGLImageLoader {
         get { return fScale }
         set { fScale = newValue; iScale = 1/newValue }
     }
-    private var fScale = SGLImageLoader.scale
-    private var iScale = 1/SGLImageLoader.scale
+    fileprivate var fScale = SGLImageLoader.scale
+    fileprivate var iScale = 1/SGLImageLoader.scale
 
     // Set true to load images with 0,0 origin as bottom left.
     public static var flipVertical = false
     public var flipVertical:Bool = SGLImageLoader.flipVertical
 
     // Needs to be NSInputStream eventually...
-    private var input:NSData
-    private var inputPos = 0
-    private var buf = [UInt8]()
-    private var bufPos = 0
-    private let bufSize = 4096
+    fileprivate var input:NSData
+    fileprivate var inputPos = 0
+    fileprivate var buf = [UInt8]()
+    fileprivate var bufPos = 0
+    fileprivate let bufSize = 4096
 
     // Initialization API is a bit unstable until
     // NSInputStream is available on Linux.
     public init(fromFile filename:String) {
         do {
-            try input = NSData(contentsOfFile: filename,
-                options: [.dataReadingUncached, .dataReadingMappedAlways])
+            try input = NSData(contentsOf: URL(fileURLWithPath: filename),
+                options: [.uncached, .alwaysMapped])
         }
         catch let error as NSError {
             self.error = error.localizedFailureReason
@@ -117,14 +117,14 @@ final public class SGLImageLoader {
     // SGLImageTypes should have an initializer that calls this.
     // But that is not required.
     public func load<T:SGLImageType>(_ img:T) {
-        decoder!.load(img: img)
+        decoder!.load(img)
         // Release some things early
         decoder = nil
         input = NSData()
         buf = [UInt8]()
     }
 
-    private func rewind() {
+    fileprivate func rewind() {
         precondition(bufPos == inputPos)
         bufPos = 0
         inputPos = 0
@@ -132,7 +132,7 @@ final public class SGLImageLoader {
 
     // Obj-C calls are extra super slow.
     // Using a buffer doubles performance.
-    private func getNextBuffer() {
+    fileprivate func getNextBuffer() {
         while bufPos >= bufSize {
             bufPos -= bufSize
         }
@@ -143,7 +143,7 @@ final public class SGLImageLoader {
             fatalError()
         }
         if length > buf.count {
-            buf = [UInt8](repeating: 0, count:length)
+            buf = [UInt8](repeating: 0, count: length)
         }
         if length < buf.count {
             buf.removeSubrange(length ..< buf.count)
@@ -154,12 +154,12 @@ final public class SGLImageLoader {
         }
     }
 
-    private func skip(_ len:Int) {
+    fileprivate func skip(_ len:Int) {
         inputPos += len
         bufPos += len
     }
 
-    private func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) {
+    fileprivate func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) {
         var i = 0
         var j = len
         while j > 0 {
@@ -188,7 +188,7 @@ final public class SGLImageLoader {
         return value
     }
 
-    private func read8() -> Int {
+    fileprivate func read8() -> Int {
         if bufPos >= buf.count {
             getNextBuffer()
         }
@@ -198,29 +198,29 @@ final public class SGLImageLoader {
         return Int(value)
     }
 
-    private func read16be() -> Int {
-        var b = [UInt8](repeating: 0, count:2)
+    fileprivate func read16be() -> Int {
+        var b = [UInt8](repeating: 0, count: 2)
         read(&b, maxLength: 2)
         let i:Int = (Int(b[0])<<8) | Int(b[1])
         return Int(i)
     }
 
-    private func read32be() -> Int {
-        var b = [UInt8](repeating: 0, count:4)
+    fileprivate func read32be() -> Int {
+        var b = [UInt8](repeating: 0, count: 4)
         read(&b, maxLength: 4)
         let i:Int32 = (Int32(b[0])<<24) | (Int32(b[1])<<16) | (Int32(b[2])<<8) | Int32(b[3])
         return Int(i)
     }
 
-    private func read16le() -> Int {
-        var b = [UInt8](repeating: 0, count:2)
+    fileprivate func read16le() -> Int {
+        var b = [UInt8](repeating: 0, count: 2)
         read(&b, maxLength: 2)
         let i:Int = (Int(b[1])<<8) | Int(b[0])
         return Int(i)
     }
 
-    private func read32le() -> Int {
-        var b = [UInt8](repeating: 0, count:4)
+    fileprivate func read32le() -> Int {
+        var b = [UInt8](repeating: 0, count: 4)
         read(&b, maxLength: 4)
         let i:Int32 = (Int32(b[3])<<24) | (Int32(b[2])<<16) | (Int32(b[1])<<8) | Int32(b[0])
         return Int(i)
@@ -231,30 +231,30 @@ final public class SGLImageLoader {
 
 // Superclass for all image decoders. Provides easy access to
 // all utility functions like reading and writing.
-public class SGLImageDecoder {
+open class SGLImageDecoder {
 
     // It is expected all this is valid after info()
     // Do not change these except in subclass.
-    public var xsize = 0
-    public var ysize = 0
-    public var channels = 0
-    public var isHDR = false
+    open var xsize = 0
+    open var ysize = 0
+    open var channels = 0
+    open var isHDR = false
 
     // Fast test to see if this decoder thinks it can decode.
-    public class func test(_ loader: SGLImageLoader) -> Bool {
+    open class func test(_ loader: SGLImageLoader) -> Bool {
         fatalError()
     }
 
     // Decode only enough to retrieve image info then stop.
     // Must provide enough info to make a good decision
     // about what SGLImage type to use.
-    public func info() {
+    open func info() {
         fatalError()
     }
 
     // Decode rest of image. Store in a SGLImage.
     // Input stream is at same position where info() stopped.
-    public func load<T:SGLImageType>(img:T) {
+    open func load<T:SGLImageType>(_ img:T) {
         fatalError()
     }
 
@@ -368,7 +368,7 @@ public class SGLImageDecoder {
     // Coefficients are the most modern I found for
     // linear color space. Using them in sRGB space
     // is generally regarded as good enough.
-    final private func luminanceY<T>(r:T, g:T, b:T) -> T {
+    final fileprivate func luminanceY<T>(r:T, g:T, b:T) -> T {
         switch r {
         case is UInt8:
             let rr = Int(r as! UInt8)
@@ -396,7 +396,7 @@ public class SGLImageDecoder {
 
     // Fill an entire line all at once from a color source.
     final public func fill<T:SGLImageType>
-        (_ img:T, row:Int, rgba fn:@noescape() ->
+        (_ img:T, row:Int, rgba fn: () ->
         (r:T.Element, g:T.Element, b:T.Element, a:T.Element) ) {
             fill(img, row: row, start: 0, step: 1, rgba: fn)
     }
@@ -404,7 +404,7 @@ public class SGLImageDecoder {
 
     // Interlaced version of color fill.
     final public func fill<T:SGLImageType>
-        (_ img:T, row:Int, start:Int, step:Int, rgba fn:@noescape() ->
+        (_ img:T, row:Int, start:Int, step:Int, rgba fn: () ->
         (r:T.Element, g:T.Element, b:T.Element, a:T.Element) ) {
             precondition(row<img.height)
             precondition(xsize==img.width)
@@ -451,14 +451,14 @@ public class SGLImageDecoder {
 
     // Fill an entire line all at once from a greyscale source.
     final public func fill<T:SGLImageType>
-        (_ img:T, row:Int, ya fn:@noescape() -> (y:T.Element, a:T.Element) ) {
+        (_ img:T, row:Int, ya fn: () -> (y:T.Element, a:T.Element) ) {
             fill(img, row: row, start: 0, step: 1, ya: fn)
     }
 
 
     // Interlaced version of greyscale fill.
     final public func fill<T:SGLImageType>
-        (_ img:T, row:Int, start:Int, step:Int, ya fn:@noescape() -> (y:T.Element, a:T.Element) ) {
+        (_ img:T, row:Int, start:Int, step:Int, ya fn: () -> (y:T.Element, a:T.Element) ) {
             precondition(row<img.height)
             precondition(xsize==img.width)
             img.withUnsafeMutableBufferPointer { (ptr) in
@@ -502,7 +502,7 @@ public class SGLImageDecoder {
 
     // Sometimes the alpha channel needs to be fixed up with
     // data that we don't have until after decoding.
-    public func fill<T:SGLImageType>(_ img:T, alpha a:T.Element) {
+    open func fill<T:SGLImageType>(_ img:T, alpha a:T.Element) {
         if img.channels == 1 || img.channels == 3 {
             return // no alpha
         }
@@ -522,20 +522,20 @@ public class SGLImageDecoder {
     // Convenience connections to loader functions.
     // To use readUInt8() call loader.readUInt8()
     weak var loader:SGLImageLoader! = nil
-    public var error:String? {
+    open var error:String? {
         get { return loader.error }
         set { loader.error = newValue }
     }
-    public var gamma:Float {
+    open var gamma:Float {
         get { return loader.gamma }
         set { loader.gamma = newValue }
     }
-    public class func skip(_ loader:SGLImageLoader, len:Int) { loader.skip(len) }
-    public class func read8(_ loader:SGLImageLoader) -> Int { return loader.read8() }
-    public class func read16be(_ loader:SGLImageLoader) -> Int { return loader.read16be() }
-    public class func read32be(_ loader:SGLImageLoader) -> Int { return loader.read32be() }
-    public class func read16le(_ loader:SGLImageLoader) -> Int { return loader.read16le() }
-    public class func read32le(_ loader:SGLImageLoader) -> Int { return loader.read32le() }
+    open class func skip(_ loader:SGLImageLoader, len:Int) { loader.skip(len) }
+    open class func read8(_ loader:SGLImageLoader) -> Int { return loader.read8() }
+    open class func read16be(_ loader:SGLImageLoader) -> Int { return loader.read16be() }
+    open class func read32be(_ loader:SGLImageLoader) -> Int { return loader.read32be() }
+    open class func read16le(_ loader:SGLImageLoader) -> Int { return loader.read16le() }
+    open class func read32le(_ loader:SGLImageLoader) -> Int { return loader.read32le() }
     final public func skip(_ len:Int) { loader.skip(len) }
     final public func read8() -> Int { return loader.read8() }
     final public func read16be() -> Int { return loader.read16be() }

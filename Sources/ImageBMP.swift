@@ -32,10 +32,10 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
         if read16be(l) != chars("BM") {
             return false
         }
-        let _ = read32le(l) // discard filesize
-        let _ = read16le(l) // discard reserved
-        let _ = read16le(l) // discard reserved
-        let _ = read32le(l) // discard data offset
+        _ = read32le(l) // discard filesize
+        _ = read16le(l) // discard reserved
+        _ = read16le(l) // discard reserved
+        _ = read32le(l) // discard data offset
         let s = read32le(l)
         return s == 12 || s == 40 || s == 56 || s == 108 || s == 124
     }
@@ -46,7 +46,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
         channels = (ma == 0) ? 3 : 4
     }
 
-    override public func load<T:SGLImageType>(img:T)
+    override public func load<T:SGLImageType>(_ img:T)
     {
         if (bpp <= 8) {
             loadPalletized(img)
@@ -77,9 +77,9 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
             return
         }
 
-        let _ = read32le() // discard filesize
-        let _ = read16le() // discard reserved
-        let _ = read16le() // discard reserved
+        _ = read32le() // discard filesize
+        _ = read16le() // discard reserved
+        _ = read16le() // discard reserved
 
         offset = read32le()
         hsize = read32le()
@@ -124,18 +124,18 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
             return
         }
 
-        let _ = read32le() // discard sizeof
-        let _ = read32le() // discard hres
-        let _ = read32le() // discard vres
-        let _ = read32le() // discard colorsused
-        let _ = read32le() // discard max important
+        _ = read32le() // discard sizeof
+        _ = read32le() // discard hres
+        _ = read32le() // discard vres
+        _ = read32le() // discard colorsused
+        _ = read32le() // discard max important
 
         if hsize == 40 || hsize == 56 {
             if (hsize == 56) {
-                let _ = read32le()
-                let _ = read32le()
-                let _ = read32le()
-                let _ = read32le()
+                _ = read32le()
+                _ = read32le()
+                _ = read32le()
+                _ = read32le()
             }
             if bpp == 16 || bpp == 32 {
                 if (compress == 0) {
@@ -173,15 +173,15 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
             mg = read32le()
             mb = read32le()
             ma = read32le()
-            let _ = read32le() // discard color space
+            _ = read32le() // discard color space
             for _ in 0 ..< 12 {
-                let _ = read32le() // discard color space parameters
+                _ = read32le() // discard color space parameters
             }
             if (hsize == 124) {
-                let _ = read32le() // discard rendering intent
-                let _ = read32le() // discard offset of profile data
-                let _ = read32le() // discard size of profile data
-                let _ = read32le() // discard reserved
+                _ = read32le() // discard rendering intent
+                _ = read32le() // discard offset of profile data
+                _ = read32le() // discard size of profile data
+                _ = read32le() // discard reserved
             }
             return // success
         }
@@ -206,7 +206,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
         }
 
         var pal:Array<(r:T.Element,g:T.Element,b:T.Element,a:T.Element)> = Array<(r:T.Element,g:T.Element,b:T.Element,a:T.Element)>(
-             repeating: (cast(UInt8(0)),cast(UInt8(0)),cast(UInt8(0)), castAlpha(UInt8(255))), count: psize
+            repeating: (cast(UInt8(0)),cast(UInt8(0)),cast(UInt8(0)),castAlpha(UInt8(255))), count: psize
         )
 
         for i in 0 ..< psize {
@@ -215,7 +215,7 @@ final public class SGLImageDecoderBMP : SGLImageDecoder {
             let r:T.Element = cast(UInt8(read8()))
             pal[i] = (r,g,b,castAlpha(UInt8(255)))
             if hsize != 12 {
-                let _ = read8()
+                _ = read8()
             }
         }
 

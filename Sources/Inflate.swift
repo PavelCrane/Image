@@ -24,14 +24,13 @@
 //        These interfaces will change in the future.
 
 
-public func inflate(_ reader: (Void) throws -> UInt8, _ writer: (UInt8) throws -> Void) throws
+public func inflate(_ reader: @escaping (Void) throws -> UInt8, _ writer: @escaping (UInt8) throws -> Void) throws
 {
     let _ = try Inflate(reader, writer)
 }
 
 
-@warn_unused_result
-public func inflate(_ reader: (Void) throws -> UInt8) throws -> Int
+public func inflate(_ reader: @escaping (Void) throws -> UInt8) throws -> Int
 {
     var size = 0
     let _ = try Inflate(reader) { _ in size += 1 }
@@ -39,16 +38,16 @@ public func inflate(_ reader: (Void) throws -> UInt8) throws -> Int
 }
 
 
-public enum InflateError: ErrorProtocol {
-    case BlockLengthMismatch
-    case InvalidBits
-    case InvalidBlockType
-    case InvalidLengths
-    case InvalidSymbol
-    case MissingLengths
-    case RepeatOverflow
-    case TooManyCodes
-    case UnknownRepeatValue
+public enum InflateError: Error {
+    case blockLengthMismatch
+    case invalidBits
+    case invalidBlockType
+    case invalidLengths
+    case invalidSymbol
+    case missingLengths
+    case repeatOverflow
+    case tooManyCodes
+    case unknownRepeatValue
 }
 
 
@@ -104,7 +103,7 @@ private final class Inflate
     var dynamicLen = Huffman()
     var dynamicDist = Huffman()
 
-    init(_ reader: (Void) throws -> UInt8, _ writer: (UInt8) throws -> Void) throws
+    init(_ reader: @escaping (Void) throws -> UInt8, _ writer: @escaping (UInt8) throws -> Void) throws
     {
         self.readUInt8 = reader
         self.writeUInt8 = writer
@@ -121,7 +120,7 @@ private final class Inflate
             case 2:
                 try dynamic()
             default:
-                throw InflateError.InvalidBlockType
+                throw InflateError.invalidBlockType
             }
             if isFinal {
                 break
@@ -181,7 +180,7 @@ private final class Inflate
             }
         }
         if (bits == 16) {
-            throw InflateError.InvalidBits
+            throw InflateError.invalidBits
         }
         bitsBuffer >>= bits
         bitsCount -= bits
@@ -190,7 +189,7 @@ private final class Inflate
     }
 
 
-    func decode(_ lencode:inout Huffman, _ distcode: inout Huffman) throws
+    func decode(_ lencode:inout Huffman, _ distcode:inout Huffman) throws
     {
         while true {
             var sym = try symbol(lencode)
@@ -200,7 +199,7 @@ private final class Inflate
             else if (sym > 256) {
                 sym -= 257
                 if sym >= 29 {
-                    throw InflateError.InvalidSymbol
+                    throw InflateError.invalidSymbol
                 }
                 let length = try bits(LenBits[sym]) + LenBase[sym]
                 sym = try symbol(distcode)
@@ -220,13 +219,13 @@ private final class Inflate
     func stored() throws
     {
         // Drain buffer up to byte alignment
-        let _ = try bits(bitsCount % 8)
+        try _ = bits(bitsCount % 8)
         var len = try UInt16(bits(8))
         len |= try UInt16(bits(8)) << 8
         var notLen = try UInt16(bits(8))
         notLen |= try UInt16(bits(8)) << 8
         guard ~len == notLen else {
-            throw InflateError.BlockLengthMismatch
+            throw InflateError.blockLengthMismatch
         }
         for _ in 0 ..< len {
             try write(try readUInt8())
@@ -261,7 +260,7 @@ private final class Inflate
         let distanceCount = try bits(5) + 1  // HDIST
         let codeCount = try bits(4) + 4      // HCLEN
         if lengthCount > MAXLCODES || distanceCount > MAXDCODES {
-            throw InflateError.TooManyCodes
+            throw InflateError.tooManyCodes
         }
 
         var codes = [Int](repeating: 0, count: 19)
@@ -282,7 +281,7 @@ private final class Inflate
                 var count:Int
                 if sym == 16 {
                     if (index == 0) {
-                        throw InflateError.UnknownRepeatValue
+                        throw InflateError.unknownRepeatValue
                     }
                     len = lengths[index - 1]
                     count = try bits(2) + 3
@@ -294,7 +293,7 @@ private final class Inflate
                     count = try bits(7) + 11
                 }
                 if (index + count > lengthCount + distanceCount) {
-                    throw InflateError.RepeatOverflow
+                    throw InflateError.repeatOverflow
                 }
                 while count > 0 {
                     count -= 1
@@ -305,11 +304,11 @@ private final class Inflate
         }
 
         guard index == lengthCount + distanceCount else {
-            throw InflateError.MissingLengths
+            throw InflateError.missingLengths
         }
 
-        let distances = lengths[lengthCount ..< lengths.endIndex].map(){$0}
-        lengths.removeSubrange(lengthCount ..< lengths.endIndex)
+        let distances = lengths[lengths.indices.suffix(from: lengthCount)].map(){$0}
+        lengths.removeSubrange(lengths.indices.suffix(from: lengthCount))
         try dynamicLen.construct(lengths)
         try dynamicDist.construct(distances)
 
@@ -347,7 +346,7 @@ private final class Huffman
         sizes[0] = 0
         for i in 1 ... MAXBITS {
             if (sizes[i] > (1 << i)) {
-                throw InflateError.InvalidLengths
+                throw InflateError.invalidLengths
             }
         }
         var code = 0
@@ -358,7 +357,7 @@ private final class Huffman
             code = code + sizes[i]
             if sizes[i] != 0 {
                 if code-1 >= (1 << i) {
-                    throw InflateError.InvalidLengths
+                    throw InflateError.invalidLengths
                 }
             }
             maxcode[i] = code << (16-i)
